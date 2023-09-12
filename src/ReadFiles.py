@@ -3,9 +3,12 @@ import psutil
 import os
 import pathlib
 import pytesseract
+import zipfile
 import pypdf
 import pandas
 import docx2pdf
+import yaml
+import xml
 
 from PotentialFiles import PotentialFiles
 from PIL import Image
@@ -31,11 +34,16 @@ def getAllFiles():
     file_paths=[]
     folder_path=pathlib.Path("题目1：富文本敏感信息泄露检测/赛题材料/")
 
+    extract(folder_path)
+
     for roots, dirs, files in os.walk(folder_path):
         for file in files:
-            file_types.append(os.path.splitext(file)[1])
-            # 获取文件的完整路径
-            file_paths.append(os.path.join(roots, file).replace("\\","/"))
+            if os.path.splitext(file)[1].endswith(".zip"):
+                continue
+            else:
+                file_types.append(os.path.splitext(file)[1])
+                # 获取文件的完整路径
+                file_paths.append(os.path.join(roots, file).replace("\\","/"))
 
     file_types=list(set(file_types))
 
@@ -52,10 +60,10 @@ def getAllFiles():
     return file_objects
 
 def readFileTo(Format,Path,OCR=False,AK=False,OFFICE=False,WPS=False,TXTLike=False,PDF=False):
+    content=""
     if(OCR==True):
         file_path=pathlib.Path(Path)
-        result=pytesseract.image_to_string(Image.open(file_path))
-        print(result)
+        content=pytesseract.image_to_string(Image.open(file_path))
     elif(AK==True):
         pass
     elif(OFFICE==True):
@@ -67,8 +75,6 @@ def readFileTo(Format,Path,OCR=False,AK=False,OFFICE=False,WPS=False,TXTLike=Fal
             xlsx_file=pandas.ExcelFile(Path)
             sheets=xlsx_file.sheet_names
             content=pandas.read_excel(Path,sheets)
-            print(content)
-            
     elif(WPS==True):
         if(Format=="WPS"):
             pass
@@ -79,15 +85,25 @@ def readFileTo(Format,Path,OCR=False,AK=False,OFFICE=False,WPS=False,TXTLike=Fal
     elif(TXTLike==True):
         if(Format=="" or Format=="TXT"):
             with open(Path,"r") as file:
-                text=file.readlines()
-                print(text)
+                content=file.readlines()
         if(Format=="YML"):
+            with open(Path,"r") as file:
+                content=yaml.safe_load(file)
+        if(Format=="XML"):
+            temp_string=[]
+            xml_tree=xml.etree.ElementTree.prase(Path)
+            for element in xml_tree:
+                temp_string.append(element.get("name"))
+                temp_string.append(element.get("value"))
+            content="".join(temp_string)             
+        if(Format=="PROPERTIES"):
             pass
     elif(PDF==True):
         pdf_reader=pypdf.PdfReader(Path)
         for page in pdf_reader.pages:
-            text=page.extract_text()
-            print(text)
+            content=page.extract_text()
+
+    return content
 
 def convertToPDF(Path,Original):
     if(platform_info=="Windows"):
@@ -95,6 +111,17 @@ def convertToPDF(Path,Original):
             docx2pdf.convert(Path)
         elif(Original=="DOC"):
             pass
+
+def extract(Path):
+    zip_files=[]
+    for roots,dirs,files in os.walk(Path):
+        for file in files:
+            if os.path.splitext(file)[1].endswith(".zip"):
+                zip_files.append(os.path.join(roots, file).replace("\\","/"))
+    for file in zip_files:  
+        file_path=pathlib.Path(file)
+        zip_file=zipfile.ZipFile(file_path)
+        zip_file.extractall(file_path.parent.resolve())
         
 # Debug使用---------------非功能性代码
 print(getAllDisk())
