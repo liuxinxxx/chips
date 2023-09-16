@@ -28,11 +28,11 @@ def getAllDisk():
         print(platform_info)
         return psutil.disk_partitions()
 
-def getAllFiles():
+def getAllFiles(Disk):
     file_types=[]
     file_objects=[]
     file_paths=[]
-    folder_path=pathlib.Path("题目1：富文本敏感信息泄露检测/赛题材料/")
+    folder_path=pathlib.Path(Disk)
 
     extract(folder_path)
 
@@ -59,13 +59,16 @@ def getAllFiles():
 
     return file_objects
 
-def readFileTo(Format,Path,OCR=False,AK=False,OFFICE=False,WPS=False,TXTLike=False,PDF=False):
+def readFileTo(Format,Path,OCR=False,DECODE=False,OFFICE=False,WPS=False,TXTLike=False,PDF=False):
     content=""
     if(OCR==True):
         file_path=pathlib.Path(Path)
         content=pytesseract.image_to_string(Image.open(file_path))
-    elif(AK==True):
-        pass
+    elif(DECODE==True):
+        if(Format=="HIV"):
+            pass
+        elif(Format=="PUB"):
+            pass
     elif(OFFICE==True):
         if(Format=="PTTX" or Format=="PPT"):
             pass
@@ -83,21 +86,35 @@ def readFileTo(Format,Path,OCR=False,AK=False,OFFICE=False,WPS=False,TXTLike=Fal
         elif(Format=="DPS"):
             pass
     elif(TXTLike==True):
-        if(Format=="" or Format=="TXT"):
+        if(Format=="TXT"):
             with open(Path,"r") as file:
                 content=file.readlines()
-        if(Format=="YML"):
+        elif(Format=="YML"):
             with open(Path,"r") as file:
                 content=yaml.safe_load(file)
-        if(Format=="XML"):
+        elif(Format=="XML"):
             temp_string=[]
             xml_tree=xml.etree.ElementTree.prase(Path)
             for element in xml_tree:
                 temp_string.append(element.get("name"))
                 temp_string.append(element.get("value"))
             content="".join(temp_string)             
-        if(Format=="PROPERTIES"):
-            pass
+        elif(Format=="PROPERTIES"):
+            with open(Path,"r") as file:
+                content=file.readlines()
+        elif(Format==""):
+            path_string=str(Path)
+            if path_string.endswith("token"):
+                pass
+            elif path_string.endswith("authorized_keys"):
+                pass
+            elif path_string.endswith("sam"):
+                pass
+            elif path_string.endswith("system"):
+                pass
+            else:
+                with open(Path,"r") as file:
+                    content=file.readlines()
     elif(PDF==True):
         pdf_reader=pypdf.PdfReader(Path)
         for page in pdf_reader.pages:
@@ -123,10 +140,5 @@ def extract(Path):
         zip_file=zipfile.ZipFile(file_path)
         zip_file.extractall(file_path.parent.resolve())
         
-# Debug使用---------------非功能性代码
 print(getAllDisk())
-for objects in getAllFiles():
-    if objects.file_type=="DOC":
-        for path in objects.path:
-            readFileTo("DOC",path,OFFICE=True)
-        
+objec=getAllFiles("题目1：富文本敏感信息泄露检测/赛题材料/")
