@@ -17,6 +17,7 @@ from PIL import Image
 
 platform_info=""
 
+#读取目标主机的所有盘符
 def getAllDisk():
     global platform_info
     platform_info=platform.system()
@@ -30,6 +31,8 @@ def getAllDisk():
         print(platform_info)
         return psutil.disk_partitions()
 
+#读取路径（磁盘）下的所有文件，保存其路径和格式为一个文件对象
+#将不同的文件对象存至对象数组file_objects
 def getAllFiles(Disk):
     file_types=[]
     file_objects=[]
@@ -62,8 +65,10 @@ def getAllFiles(Disk):
 
     return file_objects
 
+#读取文件内容，返回为String
 def readFileTo(Format,Path,OCR=False,DECODE=False,OFFICE=False,WPS=False,TXTLike=False,PDF=False):
     content=""
+
     if(OCR==True):
         file_path=pathlib.Path(Path)
         content=pytesseract.image_to_string(Image.open(file_path))
@@ -92,7 +97,7 @@ def readFileTo(Format,Path,OCR=False,DECODE=False,OFFICE=False,WPS=False,TXTLike
             pass
         elif(Format=="DOCX" or Format=="DOC"):
             convertToPDF(Path,Format)
-        elif(Format=="XLSX" or Format=="XLS" or Format=="XL"):
+        elif(Format=="XLSX" or Format=="XLS"):
             xlsx_file=pandas.ExcelFile(Path)
             sheets=xlsx_file.sheet_names
             content=pandas.read_excel(Path,sheets)
@@ -143,7 +148,6 @@ def readFileTo(Format,Path,OCR=False,DECODE=False,OFFICE=False,WPS=False,TXTLike
         pdf_reader=pypdf.PdfReader(Path)
         for page in pdf_reader.pages:
             temp_string.append(page.extract_text())
-
         content="".join(temp_string)
     return content
 
@@ -154,50 +158,65 @@ def convertToPDF(Path,Original):
         elif(Original=="DOC"):
             pass
 
+#解压所有ZIP文件
 def extract(Path):
     zip_files=[]
+    #编历
     for roots,dirs,files in os.walk(Path):
         for file in files:
             if os.path.splitext(file)[1].endswith(".zip"):
                 zip_files.append(os.path.join(roots, file).replace("\\","/"))
+    #解压
     for file in zip_files:  
         file_path=pathlib.Path(file)
         zip_file=zipfile.ZipFile(file_path)
         zip_file.extractall(file_path.parent.resolve())
 
+#读取EML文件的附件
 def readAttach(Path):
-    email_files=[]
+    email_files=[]   #存放所有EML文件的路径
+    temp_byte_filename=[]  #以字节方式存放文件名（文件名可能不完整）
+    temp_str_filename=[]   #字节格式的文件名解码为String
+    temp_encode_format=""  #编码格式
+
+    #编历所有文件
     for roots,dirs,files in os.walk(Path):
         for file in files:
             if os.path.splitext(file)[1].endswith(".eml"):
                 email_files.append(os.path.join(roots, file).replace("\\","/"))
-    i=0
+    
     for file in email_files:
         with open(file,"rb") as eml:
             message=email.message_from_binary_file(eml)
 
+        #判断EML内容是否为多段内容
         if message.is_multipart():
             for part in message.walk():
                 if part.get_filename():
-                    filename, encoding=email.header.decode_header(part.get_filename())[0]
-                    if encoding:
-                        filename=filename.decode(encoding)
+                    for name, encoding in email.header.decode_header(part.get_filename()):
+                        temp_byte_filename.append(name)
+                        if encoding!=None:
+                            temp_encode_format=encoding
+                    for byte in temp_byte_filename:
+                        temp_str_filename.append(byte.decode(temp_encode_format))
+                    filename="".join(temp_str_filename)
                     attachment=pathlib.Path(Path).parent.resolve().__str__()
-
                     with open(attachment+"/"+filename,"wb") as file:
                         file.write(part.get_payload(decode=True))
+        else:
+            if message.get_filename():
+                for name, encoding in email.header.decode_header(message.get_filename()):
+                    temp_byte_filename.append(name)
+                    if encoding!=None:
+                        temp_encode_format=encoding
 
-                if part.get_content_type().startswith('image/'):
-                    filename, encoding = email.header.decode_header(part.get_filename())[0]
-                    if encoding:
-                        filename = filename.decode(encoding)
-                        print(filename)
-                    image_data = part.get_payload(decode=True)
+                for byte in temp_byte_filename:
+                    temp_str_filename.append(byte.decode(temp_encode_format))
+                
+                filename="".join(temp_str_filename)
+                attachment=pathlib.Path(Path).parent.resolve().__str__()
 
-                    image = Image.open(io.BytesIO(image_data))
-                    image.save(pathlib.Path(Path).parent.resolve().__str__()+"wml"+i+".png")
-                    i+=1
+                with open(attachment+"/"+filename,"wb") as file:
+                    file.write(part.get_payload(decode=True))
+
             
-
-c=readFileTo("EML",r"题目1：富文本敏感信息泄露检测\赛题材料\xxx部门弱口令漏洞问题和整改 2023-05-25T17_27_32+08_00.eml",DECODE=True)
-print(c)
