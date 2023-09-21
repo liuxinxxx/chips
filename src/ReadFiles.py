@@ -9,6 +9,8 @@ import pandas
 import docx2pdf
 import yaml
 import xml
+import email
+import io
 
 from PotentialFiles import PotentialFiles
 from PIL import Image
@@ -34,6 +36,7 @@ def getAllFiles(Disk):
     file_paths=[]
     folder_path=pathlib.Path(Disk)
 
+    readAttach(folder_path)
     extract(folder_path)
 
     for roots, dirs, files in os.walk(folder_path):
@@ -64,17 +67,32 @@ def readFileTo(Format,Path,OCR=False,DECODE=False,OFFICE=False,WPS=False,TXTLike
     if(OCR==True):
         file_path=pathlib.Path(Path)
         content=pytesseract.image_to_string(Image.open(file_path))
+        
     elif(DECODE==True):
         if(Format=="HIV"):
             pass
         elif(Format=="PUB"):
             pass
+        elif(Format=="EML"):
+            with open(Path,"rb") as eml:
+                message=email.message_from_binary_file(eml)
+            temp_string=[]
+            if message.is_multipart():
+                for part in message.walk():
+                    if part.get_content_type()=="text/html":
+                        temp_string.append(part.get_payload(decode=True).decode())
+                    else:
+                        continue
+            else:
+                temp_string.append(message.get_payload(decode=True).decode())
+            content="".join(temp_string)
+
     elif(OFFICE==True):
         if(Format=="PTTX" or Format=="PPT"):
             pass
         elif(Format=="DOCX" or Format=="DOC"):
             convertToPDF(Path,Format)
-        elif(Format=="XLSX" or Format=="XLS"):
+        elif(Format=="XLSX" or Format=="XLS" or Format=="XL"):
             xlsx_file=pandas.ExcelFile(Path)
             sheets=xlsx_file.sheet_names
             content=pandas.read_excel(Path,sheets)
@@ -105,9 +123,11 @@ def readFileTo(Format,Path,OCR=False,DECODE=False,OFFICE=False,WPS=False,TXTLike
         elif(Format==""):
             path_string=str(Path)
             if path_string.endswith("token"):
-                pass
+                with open(Path,"r") as file:
+                    content=file.readlines()
             elif path_string.endswith("authorized_keys"):
-                pass
+                with open(Path,"r") as file:
+                    content=file.readlines()
             elif path_string.endswith("sam"):
                 pass
             elif path_string.endswith("system"):
@@ -115,11 +135,16 @@ def readFileTo(Format,Path,OCR=False,DECODE=False,OFFICE=False,WPS=False,TXTLike
             else:
                 with open(Path,"r") as file:
                     content=file.readlines()
+        else:
+            with open(Path,"r") as file:
+                    content=file.readlines()
     elif(PDF==True):
+        temp_string=[]
         pdf_reader=pypdf.PdfReader(Path)
         for page in pdf_reader.pages:
-            content=page.extract_text()
+            temp_string.append(page.extract_text())
 
+        content="".join(temp_string)
     return content
 
 def convertToPDF(Path,Original):
@@ -139,6 +164,40 @@ def extract(Path):
         file_path=pathlib.Path(file)
         zip_file=zipfile.ZipFile(file_path)
         zip_file.extractall(file_path.parent.resolve())
-        
-print(getAllDisk())
-objec=getAllFiles("题目1：富文本敏感信息泄露检测/赛题材料/")
+
+def readAttach(Path):
+    email_files=[]
+    for roots,dirs,files in os.walk(Path):
+        for file in files:
+            if os.path.splitext(file)[1].endswith(".eml"):
+                email_files.append(os.path.join(roots, file).replace("\\","/"))
+    i=0
+    for file in email_files:
+        with open(file,"rb") as eml:
+            message=email.message_from_binary_file(eml)
+
+        if message.is_multipart():
+            for part in message.walk():
+                if part.get_filename():
+                    filename, encoding=email.header.decode_header(part.get_filename())[0]
+                    if encoding:
+                        filename=filename.decode(encoding)
+                    attachment=pathlib.Path(Path).parent.resolve().__str__()
+
+                    with open(attachment+"/"+filename,"wb") as file:
+                        file.write(part.get_payload(decode=True))
+
+                if part.get_content_type().startswith('image/'):
+                    filename, encoding = email.header.decode_header(part.get_filename())[0]
+                    if encoding:
+                        filename = filename.decode(encoding)
+                        print(filename)
+                    image_data = part.get_payload(decode=True)
+
+                    image = Image.open(io.BytesIO(image_data))
+                    image.save(pathlib.Path(Path).parent.resolve().__str__()+"wml"+i+".png")
+                    i+=1
+            
+
+c=readFileTo("EML",r"题目1：富文本敏感信息泄露检测\赛题材料\xxx部门弱口令漏洞问题和整改 2023-05-25T17_27_32+08_00.eml",DECODE=True)
+print(c)
