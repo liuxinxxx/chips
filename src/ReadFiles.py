@@ -8,7 +8,7 @@ import pypdf
 import pandas
 import docx2pdf
 import yaml
-import xml
+import xml.etree.ElementTree
 import email
 import io
 
@@ -93,10 +93,18 @@ def readFileTo(Format,Path,OCR=False,DECODE=False,OFFICE=False,WPS=False,TXTLike
             content="".join(temp_string)
 
     elif(OFFICE==True):
-        if(Format=="PTTX" or Format=="PPT"):
-            pass
-        elif(Format=="DOCX" or Format=="DOC"):
+        if Format=="PTTX":
+            pass 
+        elif Format=="PPT":
             convertToPDF(Path,Format)
+            pdf_path=Path.replace(".pptx",".pdf")
+            content=readFileTo("PDF",pdf_path,PDF=True)
+        elif Format=="DOCX":
+            convertToPDF(Path,Format)
+            pdf_path=Path.replace(".docx",".pdf")
+            content=readFileTo("PDF",pdf_path,PDF=True)
+        elif Format=="DOC" :
+            pass
         elif(Format=="XLSX" or Format=="XLS"):
             xlsx_file=pandas.ExcelFile(Path)
             sheets=xlsx_file.sheet_names
@@ -157,6 +165,16 @@ def convertToPDF(Path,Original):
             docx2pdf.convert(Path)
         elif(Original=="DOC"):
             pass
+        elif(Original=="PPTX"):
+            pass
+        elif(Original=="PPT"):
+            pass
+    else:
+        if(Original=="DOCX"):
+            pass
+        elif(Original=="PPTX"):
+            pass
+
 
 #解压所有ZIP文件
 def extract(Path):
@@ -219,4 +237,3 @@ def readAttach(Path):
                 with open(attachment+"/"+filename,"wb") as file:
                     file.write(part.get_payload(decode=True))
 
-            
