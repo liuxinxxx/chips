@@ -15,7 +15,6 @@ from PIL import Image
 
 platform_info = ""
 
-
 # Read all drive letters of the target host
 def getAllDisk():
     global platform_info
@@ -29,7 +28,6 @@ def getAllDisk():
     else:
         print(platform_info)
         return psutil.disk_partitions()
-
 
 # Read all files under the path (disk) and save their path and format as a file object
 # Save different file objects into the object array file_objects
@@ -74,7 +72,7 @@ def readFileTo(Format, Path, OCR=False, DECODE=False, TXTLike=False, PDF=False):
 
     if OCR == True:
         file_path = pathlib.Path(Path)
-        content = pytesseract.image_to_string(Image.open(file_path)) + "\n ocr \n"
+        content = pytesseract.image_to_string(Image.open(file_path))
 
     elif DECODE == True:
         if Format == "HIV":
@@ -105,7 +103,7 @@ def readFileTo(Format, Path, OCR=False, DECODE=False, TXTLike=False, PDF=False):
         elif Format == "XML":
             temp_string = []
             xml_tree = ET.parse(Path)
-            for element in xml_tree:
+            for element in xml_tree.findall(".//"):
                 temp_string.append(element.get("name"))
                 temp_string.append(element.get("value"))
             content = "".join(temp_string)
@@ -125,7 +123,7 @@ def readFileTo(Format, Path, OCR=False, DECODE=False, TXTLike=False, PDF=False):
                 reg=Registry.Registry(Path)
                 key = reg.open("SAM\\Domains\\Account\\Users")
                 for subkey in key.subkeys():
-                    temp_string.append("Username"+subkey.name())
+                    temp_string.append("Username: "+subkey.name()+" ")
                 content="".join(temp_string)
         else:
             with open(Path, "r") as file:
@@ -137,9 +135,8 @@ def readFileTo(Format, Path, OCR=False, DECODE=False, TXTLike=False, PDF=False):
             temp_string.append(page.extract_text())
         content = "".join(temp_string)
 
-    print(Path, "type:", type(content))
+    print(Path)
     return content.__str__()
-
 
 # Extract all ZIP files
 def extract(Path):

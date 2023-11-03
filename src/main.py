@@ -1,7 +1,6 @@
 import ReadFiles
 import NLPProcess
 import concurrent.futures
-import threading
 
 
 if __name__ == "__main__":
@@ -23,11 +22,6 @@ if __name__ == "__main__":
                                 ReadFiles.readFileTo, obj.file_type, path, OCR=True
                             )
                         )
-                if obj.file_type in office_type:
-                    for path in obj.path:
-                        conetents = execute.submit(
-                            ReadFiles.readFileTo, obj.file_type, path, OFFICE=True
-                        )
                 if obj.file_type in txt_like:
                     for path in obj.path:
                         contents.append(
@@ -35,10 +29,9 @@ if __name__ == "__main__":
                                 ReadFiles.readFileTo, obj.file_type, path, TXTLike=True
                             )
                         )
-
             for content in concurrent.futures.as_completed(contents):
-                print("ips:", NLPProcess.analysText("en", content.result()))
-                print(content.result())
+                NLPProcess.analysText("en", content.result())
+
     except TypeError as typeE:
         print(typeE)
     except UnicodeDecodeError as decodeE:
