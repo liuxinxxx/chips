@@ -11,7 +11,6 @@ def analysText(language, content):
         if ip.__len__() != 0:
             print("IP:", ip)
         else:
-            #print([word.text for word in doc])
             print(content)
 
     elif language == "cn":

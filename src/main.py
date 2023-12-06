@@ -5,7 +5,7 @@ import concurrent.futures
 
 if __name__ == "__main__":
     office_type = ["DOCX", "DOC", "PPT", "PPTX", "XLS", "XLSX"]
-    txt_like = ["TXT", "PROPERTIES", "YML", "XML", ""]
+    txt_like = ["TXT", "PROPERTIES", "YML", "XML", "HIV", ""]
     img_class = ["PNG", "JPG", "JPEG", "BMP", "ICO"]
     Disks = [disk.mountpoint for disk in ReadFiles.getAllDisk()]
     contents = []

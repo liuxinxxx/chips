@@ -134,8 +134,6 @@ def readFileTo(Format, Path, OCR=False, DECODE=False, TXTLike=False, PDF=False):
         for page in pdf_reader.pages:
             temp_string.append(page.extract_text())
         content = "".join(temp_string)
-
-    print(Path)
     return content.__str__()
 
 # Extract all ZIP files
@@ -151,7 +149,6 @@ def extract(Path):
         file_path = pathlib.Path(file)
         zip_file = zipfile.ZipFile(file_path)
         zip_file.extractall(file_path.parent.resolve())
-
 
 # Read attachments of EML files
 def readAttach(Path):
