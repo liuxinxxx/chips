@@ -8,12 +8,13 @@ import pypdf
 import yaml
 import xml.etree.ElementTree as ET
 import email
-
+import hivex
 from Registry import Registry
 from PotentialFiles import PotentialFiles
 from PIL import Image
 
 platform_info = ""
+
 
 # Read all drive letters of the target host
 def getAllDisk():
@@ -28,6 +29,7 @@ def getAllDisk():
     else:
         print(platform_info)
         return psutil.disk_partitions()
+
 
 # Read all files under the path (disk) and save their path and format as a file object
 # Save different file objects into the object array file_objects
@@ -76,7 +78,8 @@ def readFileTo(Format, Path, OCR=False, DECODE=False, TXTLike=False, PDF=False):
 
     elif DECODE == True:
         if Format == "HIV":
-            pass
+            h = hivex.Hivex(Path, verbose=False)
+            print(h)
         elif Format == "PUB":
             pass
         elif Format == "EML":
@@ -120,14 +123,15 @@ def readFileTo(Format, Path, OCR=False, DECODE=False, TXTLike=False, PDF=False):
                     content = file.readlines()
             elif path_string.endswith("sam"):
                 temp_string = []
-                reg=Registry.Registry(Path)
+                reg = Registry.Registry(Path)
                 key = reg.open("SAM\\Domains\\Account\\Users")
                 for subkey in key.subkeys():
-                    temp_string.append("Username: "+subkey.name()+" ")
-                content="".join(temp_string)
+                    temp_string.append("Username: " + subkey.name() + " ")
+                content = "".join(temp_string)
         else:
             with open(Path, "r") as file:
                 content = file.readlines()
+
     elif PDF == True:
         temp_string = []
         pdf_reader = pypdf.PdfReader(Path)
@@ -135,6 +139,7 @@ def readFileTo(Format, Path, OCR=False, DECODE=False, TXTLike=False, PDF=False):
             temp_string.append(page.extract_text())
         content = "".join(temp_string)
     return content.__str__()
+
 
 # Extract all ZIP files
 def extract(Path):
@@ -149,6 +154,7 @@ def extract(Path):
         file_path = pathlib.Path(file)
         zip_file = zipfile.ZipFile(file_path)
         zip_file.extractall(file_path.parent.resolve())
+
 
 # Read attachments of EML files
 def readAttach(Path):
@@ -202,3 +208,7 @@ def readAttach(Path):
 
                 with open(attachment + "/" + filename, "wb") as file:
                     file.write(part.get_payload(decode=True))
+
+
+getAllDisk();
+readFileTo(Format='HIV', Path='D:\PythonFile\AutoAnalyse\富文本敏感信息\赛题材料\windwos\sam.hiv', TXTLike=True)
